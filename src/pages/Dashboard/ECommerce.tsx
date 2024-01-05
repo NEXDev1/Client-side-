@@ -1,27 +1,34 @@
-// import CardOne from '../../components/CardOne.tsx';
-// import ChartOne from '../../components/ChartOne.tsx';
-
-// import TableOne from '../../components/TableOne.tsx';
+// import { showToast, ToastTypes } from "../../components/tosterComponents/tost";
+import { showAlert } from '../../components/tosterComponents/tost'; // Replace with the path to your custom toast component
+import fireToast from '../../hooks/fireToast';
 
 const ECommerce = () => {
+  const admin = localStorage.getItem('admin');
+  const agent = localStorage.getItem('agent');
+  console.log('ecommerceeeeeeeeeeeee');
+
+  const handleButtonClick = () => {
+    console.log('Button clicked!');
+    // showToast('some message', ToastTypes.ERROR);
+    // showAlert('This is an information message!', 'success');
+    fireToast();
+  };
+
   return (
     <>
       <div className="flex justify-center ">
-        <p className='mt-24 text-lg text-black-2'>Welcome</p>
+        <p className="mt-24 text-lg text-black-2">
+          Welcome {admin ? 'admin' : 'agent'}
+        </p>
+        {/* <button
+          type="button"
+          onClick={handleButtonClick}
+          className="flex justify-center rounded bg-primary p-3 font-medium text-gray ml-50"
+        >
+          show tost
+        </button> */}
       </div>
     </>
-    //    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-    //    {/* <CardOne /> */}
-
-    //  </div>
-
-    //  <div className="mt-4 grid grid-cols-12 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5">
-    //    {/* <ChartOne /> */}
-
-    //    <div className="col-span-12 xl:col-span-8">
-    //      {/* <TableOne /> */}
-    //    </div>
-    //  </div>
   );
 };
 

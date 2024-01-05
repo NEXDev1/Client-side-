@@ -1,79 +1,121 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import Breadcrumb from '../../components/Breadcrumb';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import * as yup from 'yup';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { showAlert } from '../../components/tosterComponents/tost';
 
 const FormLayout = () => {
-  const [user, setUser] = useState({
-    name: '',
-    userName:'',
-    email: '',
-    contactNumber:'',
-    password: '',
-    confirmPassword: '',
+  const navigate = useNavigate();
+  interface FormValues {
+    name: string;
+    userName: string;
+    email: string;
+    contactNumber: string;
+    password: string;
+    confirmPassword: string;
+  }
+
+  const schema = yup.object().shape({
+    name: yup
+      .string()
+      .required('Name is required')
+      .min(4, 'Name should be at least 4 characters'),
+    userName: yup
+      .string()
+      .required('UserName is required')
+      .matches(/^[a-z0-9]+$/, 'Username must be in lowercase and number.')
+      .min(4, 'Username should be at least 4 characters'),
+    email: yup.string().email('Invalid email').required('Email is required'),
+    contactNumber: yup
+      .string()
+      .required('Contact Number is required')
+      .matches(
+        /^\d{10}$/,
+        'Contact number must be 10 digits and contain only numbers',
+      ),
+    password: yup
+      .string()
+      .required('Password is required')
+      .min(4, 'Password should be at least 4 characters'),
+    confirmPassword: yup
+      .string()
+      .required('Confirm password is required')
+      .oneOf([yup.ref('password')], 'Passwords must match')
+      .min(4, 'Confirm Password should be at least 4 characters'),
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setUser((prevUser) => ({
-      ...prevUser,
-      [name]: value,
-    }));
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    trigger,
+  } = useForm<FormValues>({
+    resolver: yupResolver(schema),
+  });
+
+  const onSubmit = async (data: FormValues) => {
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/admin/agent-register',
+        data,
+      );
+      console.log('User registered:', response.data);
+      if (response.data.status == 'success') {
+        showAlert('User created successfully!', 'success');
+        navigate('/admin/userlist');
+      }
+    } catch (error: any) {
+      console.error('Error registering user:', error);
+      showAlert(error?.response?.data?.error, 'error');
+    }
   };
 
-  const handleRegistration = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      // Replace the URL with your actual registration endpoint
-      const response = await axios.post('http://localhost:5000/api/admin/agent-register', user);
-      console.log(user);
-
-      console.log('User registered:', response.data);
-      alert('User registered successfully!');
-    } catch (error) {
-      console.error('Error registering user:', error);
-      alert('Something went wrong. Please try again.');
-    }
+  const handleChange = (fieldName: keyof FormValues) => {
+    return (event: React.ChangeEvent<HTMLInputElement>) => {
+      trigger(fieldName);
+    };
   };
 
   return (
     <>
-      <Breadcrumb pageName="Add User" />
-
       <div className="flex flex-col gap-9">
         <div className="rounded-xl border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
             <h3 className="font-medium text-black dark:text-white">
-              Registration Form
+              Add User Form
             </h3>
           </div>
-          <form onSubmit={handleRegistration} className="p-6.5">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-6.5">
             <div className="mb-4.5">
               <label className="mb-2.5 block text-black dark:text-white">
                 Name
               </label>
               <input
                 type="text"
-                name="name"
-                placeholder="Enter your full name"
-                value={user.name}
-                onChange={handleChange}
-                className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                placeholder="Enter your  name"
+                {...register('name')}
+                onChange={handleChange('name')}
+                className="w-5/6 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary "
               />
+              {errors.name && <p className="text-red">{errors.name.message}</p>}
             </div>
+
             <div className="mb-4.5">
               <label className="mb-2.5 block text-black dark:text-white">
                 User Name
               </label>
               <input
                 type="text"
-                name="userName"
                 placeholder="Enter your user name"
-                value={user.userName}
-                onChange={handleChange}
-                className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                {...register('userName')}
+                onChange={handleChange('userName')}
+                className="w-5/6 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
               />
+              {errors.userName && (
+                <p className="text-red">{errors.userName.message}</p>
+              )}
             </div>
             <div className="mb-4.5">
               <label className="mb-2.5 block text-black dark:text-white">
@@ -81,25 +123,29 @@ const FormLayout = () => {
               </label>
               <input
                 type="email"
-                name="email"
                 placeholder="Enter your email address"
-                value={user.email}
-                onChange={handleChange}
-                className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                {...register('email')}
+                onChange={handleChange('email')}
+                className="w-5/6 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
               />
+              {errors.email && (
+                <p className="text-red">{errors.email.message}</p>
+              )}
             </div>
             <div className="mb-4.5">
               <label className="mb-2.5 block text-black dark:text-white">
                 Contact Number
               </label>
               <input
-                type="number"
-                name="contactNumber"
                 placeholder="Enter your Contact number"
-                value={user.contactNumber}
-                onChange={handleChange}
-                className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                type="text"
+                {...register('contactNumber')}
+                onChange={handleChange('contactNumber')}
+                className="w-5/6 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
               />
+              {errors.contactNumber && (
+                <p className="text-red">{errors.contactNumber.message}</p>
+              )}
             </div>
 
             <div className="mb-4.5">
@@ -108,12 +154,14 @@ const FormLayout = () => {
               </label>
               <input
                 type="password"
-                name="password"
-                placeholder="Enter password"
-                value={user.password}
-                onChange={handleChange}
-                className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                placeholder="Enter passowrd"
+                {...register('password')}
+                onChange={handleChange('password')}
+                className="w-5/6 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
               />
+              {errors.password && (
+                <p className="text-red">{errors.password.message}</p>
+              )}
             </div>
 
             <div className="mb-5.5">
@@ -122,24 +170,26 @@ const FormLayout = () => {
               </label>
               <input
                 type="password"
-                name="confirmPassword"
-                placeholder="Re-enter password"
-                value={user.confirmPassword}
-                onChange={handleChange}
-                className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                placeholder="Enter passowrd again"
+                {...register('confirmPassword')}
+                onChange={handleChange('confirmPassword')}
+                className="w-5/6 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
               />
+              {errors.confirmPassword && (
+                <p className="text-red">{errors.confirmPassword.message}</p>
+              )}
             </div>
 
             <div className="flex justify-center">
               <button
                 type="submit"
-                className="flex justify-center rounded bg-primary p-3 font-medium text-gray ml-50"
+                className="flex justify-center rounded bg-primary p-3 font-medium text-gray ml-35"
               >
                 Register
               </button>
-              <Link to="/userlist"
+              <Link
+                to="/admin/userlist"
                 className="flex justify-center rounded bg-primary p-3 font-medium text-gray ml-3"
-                 // You can add logic for cancel button
               >
                 Cancel
               </Link>

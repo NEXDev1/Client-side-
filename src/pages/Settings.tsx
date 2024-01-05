@@ -33,22 +33,30 @@ const Settings: React.FC = () => {
         console.error('Error fetching range list:', error);
       }
     };
-
     fetchRangeList();
   }, []);
+
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
 
   return (
     <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
       <div className="flex justify-end mb-7">
         <Link
-          to="/addrange"
+          to="/admin/addrange"
           className="inline-flex items-center justify-center rounded-full bg-primary py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-5 xl:px-5"
         >
           Add Range
         </Link>
       </div>
       <div className="flex flex-col">
-        <div className="grid grid-cols-3 rounded-sm bg-gray-2 dark:bg-meta-4">
+        <div className="grid grid-cols-2 rounded-sm bg-gray-2 dark:bg-meta-4  sm:grid-cols-3 p-2.5">
           <div className="p-2.5 xl:p-5">
             <h5 className="text-sm font-medium uppercase xsm:text-base">
               Start Range
@@ -59,7 +67,7 @@ const Settings: React.FC = () => {
               End Range
             </h5>
           </div>
-          <div className="p-2.5 text-center xl:p-5">
+          <div className="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
             <h5 className="text-sm font-medium uppercase xsm:text-base">
               Date
             </h5>
@@ -69,17 +77,19 @@ const Settings: React.FC = () => {
         {rangeList.map((range) => (
           <div
             key={range._id}
-            className="grid grid-cols-3 border-b border-stroke dark:border-strokedark "
+            className="grid grid-cols-2 border-b border-stroke dark:border-strokedark sm:grid-cols-3 p-2.5"
             style={{ backgroundColor: range.color }}
           >
-            <div className="flex items-center justify-center p-2.5 xl:p-5">
-              <p className="text-black dark:text-white">{range.startRange}</p>
+            <div className="flex items-center justify-center p-2.5 xl:p-5 ">
+              <p className="text-white dark:text-white">{range.startRange}</p>
             </div>
             <div className="flex items-center justify-center p-2.5 xl:p-5">
-              <p className="text-meta-3">{range.endRange}</p>
+              <p className="text-white">{range.endRange}</p>
             </div>
             <div className="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
-              <p className="text-black dark:text-white">{range.date}</p>
+              <p className="text-white dark:text-white">
+                {formatDate(range.date)}
+              </p>
             </div>
           </div>
         ))}

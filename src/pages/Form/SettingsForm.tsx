@@ -1,86 +1,95 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import Breadcrumb from '../../components/Breadcrumb';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { HexColorPicker } from 'react-colorful';
+import * as yup from 'yup';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { useForm } from 'react-hook-form';
+import { showAlert } from '../../components/tosterComponents/tost';
+
+interface FormValues {
+  startRange: number;
+  endRange: number;
+}
 
 const FormLayout2 = () => {
-  const [user, setUser] = useState({
-    startRange:'',
-    endRange:''
+  const navigate = useNavigate();
+  const [color, setColor] = useState('#ff0000');
+
+  const schema = yup.object().shape({
+    startRange: yup
+      .number()
+      .required('Start Range is required')
+      .positive('Start Range must be a positive number')
+      .lessThan(
+        yup.ref('endRange'),
+        'Start Range must be smaller than End Range',
+      )
+      .nullable(),
+    endRange: yup
+      .number()
+      .required('End Range is required')
+      .positive('End Range must be a positive number')
+      .moreThan(
+        yup.ref('startRange'),
+        'End Range must be greater than Start Range',
+      )
+      .nullable(),
   });
 
-  // const [range, setRange] = useState<{ min: number; max: number }>({
-  //   min: 2,
-  //   max: 10,
-  // });
-  const [color, setColor] = useState('#aabbcc');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    trigger,
+  } = useForm<FormValues>({
+    resolver: yupResolver(schema),
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setUser((prevUser) => ({
-      ...prevUser,
-      [name]: value,
-    }));
-  };
-
-  // const handleRangeChange = (value: number | { min: number; max: number }) => {
-  //   // If the value is a number, update only the 'min' property
-  //   if (typeof value === 'number') {
-  //     setRange((prevRange) => ({
-  //       ...prevRange,
-  //       min: value,
-  //     }));
-  //   } else {
-  //     // If the value is an object, update the entire 'range' state
-  //     setRange(value);
-  //   }
-  // };
-
-  const handleRegistration = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: any) => {
+    console.log(data);
+    const userWithColor = { ...data, color };
 
     try {
-      const userWithColor = { ...user, color };
-
-      // Replace the URL with your actual registration endpoint
       const response = await axios.post(
         'http://localhost:5000/api/admin/enitity-rang',
-        userWithColor
+        userWithColor,
       );
-      console.log(userWithColor);
-      console.log('Added successfully:', response.data);
-      alert('Added successfully !');
-    } catch (error) {
-      console.error('Error adding settings:', error);
-      alert('Something went wrong. Please try again.');
+      console.log('User registered:', response.data);
+      if (response.data.status === 'success') {
+        showAlert('New Rang is Added ! ', 'success');
+        navigate('/admin/settings');
+      }
+    } catch (error: any) {
+      console.error('Error registering user:', error);
+      showAlert(error?.response?.data?.error, 'error');
     }
   };
 
   return (
     <>
-      <Breadcrumb pageName="Add Settings" />
-
       <div className="flex flex-col gap-9">
         <div className="rounded-xl border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
             <h3 className="font-medium text-black dark:text-white">
-              Entity Form
+              Range Form
             </h3>
           </div>
-          <form onSubmit={handleRegistration} className="p-6.5">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-6.5">
             <div className="mb-4.5">
               <label className="mb-2.5 block text-black dark:text-white">
                 Start Range
               </label>
               <input
                 type="number"
-                name="startRange"
                 placeholder="Enter the start range"
-                value={user.startRange}
-                onChange={handleChange}
+                {...register('startRange')}
+                onChange={() => trigger('startRange')}
                 className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
               />
+              {errors.startRange && (
+                <p className="text-red">{errors.startRange.message}</p>
+              )}
             </div>
             <div className="mb-4.5">
               <label className="mb-2.5 block text-black dark:text-white">
@@ -88,25 +97,15 @@ const FormLayout2 = () => {
               </label>
               <input
                 type="number"
-                name="endRange"
                 placeholder="Enter the end range"
-                value={user.endRange}
-                onChange={handleChange}
+                {...register('endRange')}
+                onChange={() => trigger('endRange')}
                 className="w-2/3 rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
               />
+              {errors.endRange && (
+                <p className="text-red">{errors.endRange.message}</p>
+              )}
             </div>
-            {/* <div className="mb-4.5">
-              <label className="mb-2.5 block text-black dark:text-white">
-                Select Range
-              </label>
-              <InputRange
-                maxValue={20}
-                minValue={0}
-                value={range}
-                onChange={handleRangeChange}
-              />
-            </div> */}
-
             <div className="mb-4.5">
               <label className="mb-2.5 block text-black dark:text-white">
                 Select Color
@@ -114,10 +113,10 @@ const FormLayout2 = () => {
               <HexColorPicker color={color} onChange={setColor} />
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center m-8">
               <button
                 type="submit"
-                className="flex justify-center rounded bg-primary p-3 font-medium text-gray ml-50"
+                className="flex justify-center rounded bg-primary p-3 font-medium text-gray ml-30"
               >
                 Save
               </button>
